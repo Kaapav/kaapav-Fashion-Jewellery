@@ -80,7 +80,7 @@ function App() {
     const totalBadge = unreadTotal + pendingCount;
     document.title = isPublicStudioPreview
       ? 'KAAPAV Auto — Studio Preview'
-      : totalBadge > 0 
+      : totalBadge > 0
       ? `(${totalBadge}) KAAPAV Business` 
       : 'KAAPAV Business';
   }, [isPublicStudioPreview, unreadTotal, pendingCount]);
