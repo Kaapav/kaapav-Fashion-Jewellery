@@ -169,6 +169,16 @@ img {
   overflow-x: hidden;
 }
 
+/* Full-width shell reserved for the KAAPAV Auto Studio dashboard.
+   The legacy commerce app remains intentionally mobile-constrained above. */
+.studio-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #e7ddca;
+  position: relative;
+  overflow-x: hidden;
+}
+
 @media (min-width: 481px) {
   .app {
     box-shadow: var(--shadow-lg);

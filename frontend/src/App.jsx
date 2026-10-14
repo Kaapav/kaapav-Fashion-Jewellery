@@ -57,7 +57,7 @@ function AppLayout({ children, showNav = true }) {
   );
 
   return (
-    <div className="app">
+    <div className={showNav ? 'app' : 'studio-app'}>
       {children}
       {shouldShowNav && <BottomNav />}
     </div>
@@ -99,23 +99,10 @@ function App() {
     };
   }, [isAuthenticated, token]);
 
-  // Register service worker
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered:', registration);
-        })
-        .catch((error) => {
-          console.error('SW registration failed:', error);
-        });
-    }
-  }, []);
-
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen />}>
-        <AppLayout>
+        <AppLayout showNav={!isPublicStudioPreview}>
           <Routes>
             {isPublicStudioPreview && (
               <>
