@@ -15,7 +15,15 @@ const EMPTY_SNAPSHOT = {
   products: {},
   queue: {},
   platforms: {},
+  schedules: {},
+  analytics: {},
   learning: {},
+};
+
+const PLATFORM_META = {
+  youtube: { label: 'YouTube', audience: 'Subscribers', releaseRule: 'Private or future-scheduled only' },
+  facebook: { label: 'Facebook', audience: 'Followers', releaseRule: 'Due audited reels only' },
+  instagram: { label: 'Instagram', audience: 'Followers', releaseRule: 'Due audited reels only' },
 };
 
 function readable(value) {
@@ -35,6 +43,18 @@ function formatTime(value) {
   if (!value) return 'No live timestamp';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat().format(number) : String(value);
+}
+
+function getItems(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.items)) return value.items;
+  return [];
 }
 
 function getPlatform(snapshot, name) {
@@ -80,10 +100,101 @@ function PlatformCard({ name, platform, note }) {
   );
 }
 
+function ScheduleLane({ platform, schedule }) {
+  const meta = PLATFORM_META[platform];
+  const entries = getItems(schedule);
+  const status = schedule?.status || (entries.length ? 'ready' : 'not_connected');
+
+  return (
+    <article className="studio-schedule-lane">
+      <div className="studio-schedule-lane__heading">
+        <div>
+          <span className="studio-section-label">{meta.label}</span>
+          <h3>{meta.releaseRule}</h3>
+        </div>
+        <StatusPill value={status} />
+      </div>
+      {entries.length ? (
+        <ol className="studio-schedule-list">
+          {entries.slice(0, 4).map((item, index) => (
+            <li key={`${item.sku || item.video_id || item.id || 'release'}-${index}`}>
+              <div>
+                <strong>{item.title || item.sku || 'Audited release'}</strong>
+                <span>{item.sku || item.video_id || item.id || 'Identity not supplied'}</span>
+              </div>
+              <div className="studio-schedule-list__time">
+                <StatusPill value={item.status || 'audited'} />
+                <small>{formatTime(item.publish_at || item.scheduled_at || item.due_at)}</small>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="studio-empty-copy">{schedule?.reason || 'No audited release is present in the secure snapshot.'}</p>
+      )}
+    </article>
+  );
+}
+
+function AudienceCard({ platform, analytics }) {
+  const meta = PLATFORM_META[platform];
+  const audience = analytics?.subscribers ?? analytics?.followers ?? analytics?.audience_count;
+  const status = analytics?.status || analytics?.source_status || 'not_collected';
+  const collectedAt = analytics?.collected_at || analytics?.last_verified_at;
+
+  return (
+    <article className="studio-audience-card">
+      <span>{meta.label} {meta.audience}</span>
+      <strong>{formatNumber(audience)}</strong>
+      <StatusPill value={status} />
+      <small>{collectedAt ? `Collected ${formatTime(collectedAt)}` : 'Not collected from the platform yet'}</small>
+    </article>
+  );
+}
+
+function VideoTable({ platform, analytics }) {
+  const meta = PLATFORM_META[platform];
+  const videos = getItems(analytics?.videos || analytics?.reels || analytics?.media);
+  const status = analytics?.status || analytics?.source_status || 'not_collected';
+
+  if (!videos.length) {
+    return (
+      <div className="studio-video-empty">
+        <StatusPill value={status} />
+        <p>{analytics?.reason || `${meta.label} per-video analytics have not been collected through the secure factory bridge.`}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="studio-video-table-wrap">
+      <table className="studio-video-table">
+        <thead>
+          <tr><th>Video</th><th>Published</th><th>Views</th><th>Engagement</th></tr>
+        </thead>
+        <tbody>
+          {videos.slice(0, 12).map((video, index) => {
+            const engagement = video.engagement ?? video.likes ?? video.reactions;
+            return (
+              <tr key={`${video.video_id || video.id || video.media_id || 'video'}-${index}`}>
+                <td><strong>{video.title || video.caption || video.sku || 'Untitled release'}</strong><small>{video.sku || video.video_id || video.id || video.media_id || 'Identity not supplied'}</small></td>
+                <td>{formatTime(video.published_at || video.publish_at || video.created_at)}</td>
+                <td>{formatNumber(video.views ?? video.view_count ?? video.plays)}</td>
+                <td>{formatNumber(engagement)}{video.comments !== undefined && <small> · {formatNumber(video.comments)} comments</small>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function StudioDashboard({ publicPreview = false }) {
   const [snapshot, setSnapshot] = useState(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activePlatform, setActivePlatform] = useState('youtube');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -126,6 +237,8 @@ function StudioDashboard({ publicPreview = false }) {
   const youtube = getPlatform(snapshot, 'youtube');
   const nextAction = autopilot.reason || autopilot.qc_failure_reason || 'No live control instruction supplied.';
   const learning = snapshot.learning || {};
+  const schedules = snapshot.schedules || snapshot.release_schedule || {};
+  const analytics = snapshot.analytics || {};
   const currentItem = autopilot.current_sku
     ? `${autopilot.current_sku}${autopilot.video_number ? ` · Video ${autopilot.video_number}` : ''}`
     : 'No item in progress';
@@ -215,6 +328,42 @@ function StudioDashboard({ publicPreview = false }) {
           </div>
         </article>
 
+      </section>
+
+      <section className="studio-operations" aria-label="Platform scheduler and analytics">
+        <article className="studio-panel studio-panel--wide studio-panel--scheduler">
+          <div className="studio-panel__heading">
+            <div>
+              <span className="studio-section-label">Audited scheduler</span>
+              <h2>Release lanes by platform</h2>
+            </div>
+            <span className="studio-caption">Read-only — central autopilot is the sole executor</span>
+          </div>
+          <div className="studio-schedule-grid">
+            {Object.keys(PLATFORM_META).map((platform) => <ScheduleLane key={platform} platform={platform} schedule={schedules[platform]} />)}
+          </div>
+        </article>
+
+        <article className="studio-panel studio-panel--wide studio-panel--analytics">
+          <div className="studio-panel__heading">
+            <div>
+              <span className="studio-section-label">Platform performance</span>
+              <h2>Audience and video evidence</h2>
+            </div>
+            <span className="studio-caption">Platform API facts only — no estimated values</span>
+          </div>
+          <div className="studio-audience-grid">
+            {Object.keys(PLATFORM_META).map((platform) => <AudienceCard key={platform} platform={platform} analytics={analytics[platform]} />)}
+          </div>
+          <div className="studio-tabs" role="tablist" aria-label="Per-platform video performance">
+            {Object.keys(PLATFORM_META).map((platform) => (
+              <button key={platform} type="button" role="tab" aria-selected={activePlatform === platform} className={activePlatform === platform ? 'is-active' : ''} onClick={() => setActivePlatform(platform)}>
+                {PLATFORM_META[platform].label} videos
+              </button>
+            ))}
+          </div>
+          <VideoTable platform={activePlatform} analytics={analytics[activePlatform]} />
+        </article>
       </section>
     </main>
   );

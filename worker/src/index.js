@@ -930,6 +930,59 @@ const TriggerHandlers = {
 // ════════════════════════════════════════════════════════════════
 // ROUTE DEFINITIONS
 // ════════════════════════════════════════════════════════════════
+const STUDIO_SNAPSHOT_KEY = 'fashion-video-studio:status:v1';
+const STUDIO_FORBIDDEN_KEYS = new Set([
+  'access_token', 'token', 'refresh_token', 'client_secret', 'secret',
+  'password', 'credential', 'credentials', 'oauth', 'authorization',
+  'local_path', 'source_path', 'raw_media_url', 'supplier_secret'
+]);
+
+function hasForbiddenStudioField(value) {
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value).some(([key, child]) => (
+    STUDIO_FORBIDDEN_KEYS.has(String(key).toLowerCase()) || hasForbiddenStudioField(child)
+  ));
+}
+
+const StudioHandlers = {
+  // The factory alone may write this sanitized status mirror. Browser clients
+  // can only read it through the normal authenticated dashboard route.
+  async ingest(ctx) {
+    const configuredToken = ctx.env.STUDIO_BRIDGE_TOKEN;
+    const suppliedToken = ctx.request.headers.get('X-Studio-Bridge-Token');
+    if (!configuredToken || !suppliedToken || suppliedToken !== configuredToken) {
+      return ctx.error('Studio bridge authentication failed', 401);
+    }
+
+    const payload = await ctx.body();
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return ctx.error('Studio bridge payload must be an object');
+    }
+    if (!payload.generated_at || hasForbiddenStudioField(payload)) {
+      return ctx.error('Studio bridge payload is invalid or contains a prohibited field');
+    }
+
+    const serialized = JSON.stringify(payload);
+    if (serialized.length > 180000) return ctx.error('Studio bridge payload exceeds the safe size limit');
+    await ctx.env.KV.put(STUDIO_SNAPSHOT_KEY, serialized, { expirationTtl: 420 });
+    return ctx.json({ status: 'accepted', generated_at: payload.generated_at });
+  },
+
+  async status(ctx) {
+    const stored = await ctx.env.KV.get(STUDIO_SNAPSHOT_KEY, 'json');
+    if (!stored || typeof stored !== 'object' || hasForbiddenStudioField(stored)) {
+      return ctx.json({
+        status: 'unavailable',
+        generated_at: null,
+        autopilot: { state: 'not_connected', reason: 'No current sanitized snapshot has been received from the factory.' },
+        pipeline_lock: { state: 'unknown' },
+        platforms: {}, schedules: {}, analytics: {}, learning: {}
+      });
+    }
+    return ctx.json(stored);
+  }
+};
+
 const router = new Router();
 
 // Health check
@@ -972,6 +1025,11 @@ router.get('/api/analytics', AnalyticsHandlers.overview);
 router.get('/api/stats', AnalyticsHandlers.stats);  // ADD THIS
 router.get('/api/analytics/activities', AnalyticsHandlers.activities);  // ADD THIS
 router.get('/api/analytics/pending', AnalyticsHandlers.pending);  // ADD THIS
+
+// Fashion Video Studio: browser is read-only; factory bridge uses a separate
+// secret header and cannot access any other dashboard endpoint.
+router.get('/api/studio/status', StudioHandlers.status);
+router.post('/api/studio/ingest', StudioHandlers.ingest);
 
 // Products
 router.get('/api/products/categories', ProductHandlers.categories);
@@ -1030,6 +1088,7 @@ export default {
       // ════════════════════════════════════════════════════════
       if (path.startsWith('/api/') &&
           !path.startsWith('/api/auth/') &&
+          path !== '/api/studio/ingest' &&
           !path.includes('/webhook')) {
         
         const auth = request.headers.get('Authorization');
