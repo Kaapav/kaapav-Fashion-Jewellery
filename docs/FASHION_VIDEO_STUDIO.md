@@ -53,11 +53,12 @@ Set the Worker secret outside source control:
 npx wrangler secret put STUDIO_BRIDGE_TOKEN
 ```
 
-The factory uses the same value only from its local environment. It must never
-be added to JSON, GitHub, the browser, a product contract, or a scheduled task
-argument. The bridge rejects token/secret/credential fields and snapshots expire
-after seven minutes. The sole central autopilot remains the release executor;
-this bridge is read-only from the application side.
+After the owner approves the factory-to-Worker destination, the factory bridge
+must use the same value only from its local environment. It must never be added
+to JSON, GitHub, the browser, a product contract, or a scheduled task argument.
+The bridge rejects token/secret/credential fields and snapshots expire after
+seven minutes. The sole central autopilot remains the release executor; this
+bridge is read-only from the application side.
 
 ## Scheduler and analytics rules
 
