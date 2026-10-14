@@ -265,6 +265,11 @@ function Dashboard() {
                 label="Analytics"
                 onClick={() => navigate('/settings?tab=analytics')}
               />
+              <QuickAction
+                icon="fa-clapperboard"
+                label="Video Studio"
+                onClick={() => navigate('/studio')}
+              />
             </div>
           </div>
 

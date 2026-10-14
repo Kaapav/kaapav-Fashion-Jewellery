@@ -17,6 +17,7 @@ import OfflineBanner from './components/OfflineBanner';
 // Lazy load screens for better performance
 const Login = lazy(() => import('./screens/Login'));
 const Dashboard = lazy(() => import('./screens/Dashboard'));
+const StudioDashboard = lazy(() => import('./screens/StudioDashboard'));
 const Chats = lazy(() => import('./screens/Chats'));
 const ChatWindow = lazy(() => import('./screens/ChatWindow'));
 const Orders = lazy(() => import('./screens/Orders'));
@@ -124,6 +125,10 @@ function App() {
             {/* Protected Routes */}
             <Route path="/dashboard" element={
               <ProtectedRoute><Dashboard /></ProtectedRoute>
+            } />
+
+            <Route path="/studio" element={
+              <ProtectedRoute><StudioDashboard /></ProtectedRoute>
             } />
             
             <Route path="/chats" element={

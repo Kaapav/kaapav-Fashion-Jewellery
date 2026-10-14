@@ -371,6 +371,17 @@ export const dashboardAPI = {
   // Get pending actions
   getPendingActions: () => api.get('/api/analytics/pending'),
 };
+
+// ═══════════════════════════════════════════════════════════════
+// FASHION VIDEO STUDIO API
+// ═══════════════════════════════════════════════════════════════
+
+// This endpoint is deliberately read-only. The local KAAPAV video factory is
+// the sole executor; the dashboard must never submit Flow jobs or publish a
+// release from the browser.
+export const studioAPI = {
+  getStatus: () => api.get('/api/studio/status'),
+};
  
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS API

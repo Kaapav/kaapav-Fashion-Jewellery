@@ -17,6 +17,7 @@ function BottomNav() {
 
   const navItems = [
     { path: '/dashboard', icon: 'fa-th-large', label: 'Dashboard' },
+    { path: '/studio', icon: 'fa-clapperboard', label: 'Studio' },
     { path: '/chats', icon: 'fa-comments', label: 'Chats', badge: unreadTotal },
     { path: '/orders', icon: 'fa-shopping-bag', label: 'Orders', badge: pendingCount },
     { path: '/products', icon: 'fa-box', label: 'Products' },
