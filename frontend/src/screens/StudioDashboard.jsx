@@ -140,8 +140,8 @@ function StudioDashboard({ publicPreview = false }) {
       <header className="studio-hero">
         <div>
           <p className="studio-eyebrow">KAAPAV Fashion Jewellery</p>
-          <h1>Video Studio Control Room</h1>
-          <p>Direct Flow video · fidelity-first QC · audited private/future releases</p>
+          <h1>KAAPAV Auto</h1>
+          <p className="studio-subtitle">Video factory console</p>
         </div>
         <div className="studio-hero__actions">
           <div className="studio-live-label">
@@ -215,20 +215,6 @@ function StudioDashboard({ publicPreview = false }) {
           </div>
         </article>
 
-        <article className="studio-panel">
-          <div className="studio-panel__heading">
-            <div>
-              <span className="studio-section-label">Production standard</span>
-              <h2>Non-negotiables</h2>
-            </div>
-          </div>
-          <ul className="studio-rules">
-            <li>Google Flow creates the final direct video.</li>
-            <li>720 × 1280 · 24 FPS · H.264 MP4 · max 58 seconds.</li>
-            <li>Strict product fidelity and byte-bound QC pass required.</li>
-            <li>One scheduled task and one central executor only.</li>
-          </ul>
-        </article>
       </section>
     </main>
   );
