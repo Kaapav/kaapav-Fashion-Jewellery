@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // GitHub Pages serves this repository beneath its repository slug. The
+  // production app remains rooted at its configured domain.
+  base: process.env.GITHUB_ACTIONS ? '/kaapav-Fashion-Jewellery/' : '/',
   plugins: [
     react(),
     VitePWA({

@@ -80,7 +80,7 @@ function PlatformCard({ name, platform, note }) {
   );
 }
 
-function StudioDashboard() {
+function StudioDashboard({ publicPreview = false }) {
   const [snapshot, setSnapshot] = useState(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -100,10 +100,22 @@ function StudioDashboard() {
   }, []);
 
   useEffect(() => {
+    if (publicPreview) {
+      setSnapshot({
+        ...EMPTY_SNAPSHOT,
+        status: 'preview',
+        autopilot: {
+          state: 'preview_only',
+          reason: 'Public design preview. It is not connected to the KAAPAV production factory.',
+        },
+      });
+      setLoading(false);
+      return undefined;
+    }
     refresh();
     const interval = window.setInterval(refresh, 60_000);
     return () => window.clearInterval(interval);
-  }, [refresh]);
+  }, [publicPreview, refresh]);
 
   const pipeline = snapshot.pipeline_lock || {};
   const autopilot = snapshot.autopilot || {};
@@ -134,15 +146,17 @@ function StudioDashboard() {
         <div className="studio-hero__actions">
           <div className="studio-live-label">
             <span className={`studio-live-dot ${snapshot.status === 'healthy' ? 'studio-live-dot--on' : ''}`} />
-            {snapshot.generated_at ? `Live snapshot ${formatTime(snapshot.generated_at)}` : 'Control bridge not connected'}
+            {publicPreview
+              ? 'Public design preview — no live factory data'
+              : snapshot.generated_at ? `Live snapshot ${formatTime(snapshot.generated_at)}` : 'Control bridge not connected'}
           </div>
-          <button type="button" className="studio-refresh" onClick={refresh} disabled={loading}>
+          {!publicPreview && <button type="button" className="studio-refresh" onClick={refresh} disabled={loading}>
             {loading ? 'Refreshing…' : 'Refresh status'}
-          </button>
+          </button>}
         </div>
       </header>
 
-      {error && <div className="studio-notice">{error}</div>}
+      {(error || publicPreview) && <div className="studio-notice">{error || 'This public page contains no credentials, product details, Flow jobs, analytics, or publishing controls.'}</div>}
 
       <section className="studio-state-card" aria-label="Autopilot state">
         <div>

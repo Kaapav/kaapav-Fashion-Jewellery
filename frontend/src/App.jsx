@@ -73,14 +73,17 @@ function App() {
   const { toast, isOffline, globalLoading } = useUIStore();
   const { unreadTotal } = useChatStore();
   const { pendingCount } = useOrderStore();
+  const isPublicStudioPreview = import.meta.env.VITE_PUBLIC_STUDIO_PREVIEW === 'true';
 
   // Update document title with notifications
   useEffect(() => {
     const totalBadge = unreadTotal + pendingCount;
-    document.title = totalBadge > 0 
+    document.title = isPublicStudioPreview
+      ? 'KAAPAV Auto — Studio Preview'
+      : totalBadge > 0 
       ? `(${totalBadge}) KAAPAV Business` 
       : 'KAAPAV Business';
-  }, [unreadTotal, pendingCount]);
+  }, [isPublicStudioPreview, unreadTotal, pendingCount]);
 
   // Setup real-time connection when authenticated
   useEffect(() => {
@@ -114,6 +117,14 @@ function App() {
       <Suspense fallback={<LoadingScreen />}>
         <AppLayout>
           <Routes>
+            {isPublicStudioPreview && (
+              <>
+                <Route path="/" element={<StudioDashboard publicPreview />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </>
+            )}
+
+            {!isPublicStudioPreview && <>
             {/* Public Routes */}
             <Route 
               path="/login" 
@@ -175,6 +186,7 @@ function App() {
 
             {/* 404 - Redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
+            </>}
           </Routes>
         </AppLayout>
       </Suspense>

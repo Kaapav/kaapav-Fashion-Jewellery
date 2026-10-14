@@ -26,3 +26,7 @@ Suggested response shape:
 ```
 
 If the endpoint is missing, stale, or invalid, the UI shows **Control bridge not connected**. It must never substitute a static success state.
+
+## Public KAAPAV Auto preview
+
+The GitHub Pages workflow builds a separate static preview branded **KAAPAV Auto**. It contains no live factory status, product data, credentials, analytics, release controls, or publishing capability. The authenticated `/studio` application view remains the only dashboard that may request a live status snapshot.
